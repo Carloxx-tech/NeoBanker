@@ -1182,11 +1182,8 @@ function _navegarSegunEstado(estado) {
     renderLobby();
     mostrarPantalla('screen-lobby');
   } else if (estado === 'activa') {
-    if (state.esHost) {
-      mostrarPantalla('screen-cajero');
-    } else {
-      mostrarPantalla('screen-billetera');
-    }
+    // Al usar activarModo, nos aseguramos de que TODO se dibuje al instante
+    activarModo(state.esHost ? 'cajero' : 'billetera');
   }
 }
 
@@ -1423,7 +1420,10 @@ function renderCajero() {
   if (!lista) return;
 
   lista.innerHTML = '';
-  Object.values(state.jugadores).forEach(j => {
+  const jugadoresArray = Object.values(state.jugadores);
+
+  // 1. Dibujar las tarjetas
+  jugadoresArray.forEach(j => {
     const usada = (state.cajero.uidIzq === j.uid) || (state.cajero.uidDer === j.uid);
     const hex = getColorHex(j.color);
     
@@ -1434,10 +1434,19 @@ function renderCajero() {
         </div>
         <div>
           <div class="t-nombre">${j.nombre}</div>
-          </div>
+        </div>
       </div>`;
   });
   cajeroActualizarRanuras();
+
+  // 2. Llenar la lista desplegable de Transferir Host
+  const candidatosHost = jugadoresArray.filter((j) => j.uid !== state.uid);
+  _reconstruirSelect('select-nuevo-host', candidatosHost, false);
+
+  const btnTransferir = document.getElementById('btn-transferir-host');
+  if (btnTransferir) {
+    btnTransferir.disabled = candidatosHost.length === 0;
+  }
 }
 
 function cajeroActualizarRanuras() {
@@ -2108,7 +2117,6 @@ function _wireEvents() {
 
   // ── Perfil ───────────────────────────────────────────────────
   _on('form-perfil',           'submit', (e) => { e.preventDefault(); unirseASala(); });
-  _on('btn-perfil-confirmar',  'click',  unirseASala);
 
   // Preview de avatar en tiempo real mientras se escribe el nombre
   _on('input-nombre-jugador', 'input', (e) => {
