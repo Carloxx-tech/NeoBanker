@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <meta name="description" content="NeoBanker — Banca digital para tus juegos de mesa" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="NeoBanker" />
+
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+
+    <link rel="stylesheet" href="styles.css" />
+
+    <title>NeoBanker</title>
+  </head>
+
+  <body>
+
+    <!-- ═══════════════════════════════════════════════
+         OVERLAY GLOBAL: CARGA
+    ════════════════════════════════════════════════ -->
+    <div id="loading" role="status" aria-label="Cargando" aria-live="polite">
+      <div class="loading__backdrop"></div>
+      <div class="loading__content">
+        <div class="loading__spinner" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <p class="loading__text">Cargando…</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TOAST GLOBAL
+    ════════════════════════════════════════════════ -->
+    <div id="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <span id="toast-icon" aria-hidden="true"></span>
+      <span id="toast-message"></span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         MODAL: FONDOS INSUFICIENTES
+    ════════════════════════════════════════════════ -->
+    <div id="modal-fondos" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-fondos-title" hidden>
+      <div class="modal__backdrop"></div>
+      <div class="modal__panel">
+        <div class="modal__icon" aria-hidden="true">⚠</div>
+        <h2 id="modal-fondos-title" class="modal__title">Fondos insuficientes</h2>
+        <p id="modal-fondos-body" class="modal__body">
+          El jugador no tiene saldo suficiente para esta transacción.
+          ¿Deseas proceder de todas formas? (Modo flexible)
+        </p>
+        <div class="modal__actions">
+          <button id="modal-fondos-cancelar" class="btn btn--ghost" type="button">Cancelar</button>
+          <button id="modal-fondos-confirmar" class="btn btn--danger" type="button">Proceder igual</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         MODAL: TERMINAR PARTIDA
+    ════════════════════════════════════════════════ -->
+    <div id="modal-terminar" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-terminar-title" hidden>
+      <div class="modal__backdrop"></div>
+      <div class="modal__panel">
+        <div class="modal__icon" aria-hidden="true">🏁</div>
+        <h2 id="modal-terminar-title" class="modal__title">¿Terminar la partida?</h2>
+        <p id="modal-terminar-body" class="modal__body">
+          Esta acción cerrará la sala para todos los jugadores y no se puede deshacer.
+        </p>
+        <div class="modal__actions">
+          <button id="modal-terminar-cancelar" class="btn btn--ghost" type="button">Cancelar</button>
+          <button id="modal-terminar-confirmar" class="btn btn--danger" type="button">Terminar partida</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         CONTENEDOR PRINCIPAL DE PANTALLAS
+    ════════════════════════════════════════════════ -->
+    <main id="app">
+
+      <!-- ─────────────────────────────────────────
+           1. HOME — Crear o unirse
+      ────────────────────────────────────────── -->
+      <section id="screen-home" class="screen screen--home" aria-label="Inicio" hidden>
+        <header class="screen-home__header">
+          <div class="logo" aria-hidden="true">
+            <span class="logo__symbol">₿</span>
+          </div>
+          <h1 class="logo__wordmark">NeoBanker</h1>
+          <p class="logo__tagline">El banco de tus juegos de mesa</p>
+        </header>
+
+        <div class="screen-home__actions">
+          <button id="btn-crear-sala" class="btn btn--primary btn--xl" type="button">
+            <span class="btn__icon" aria-hidden="true">＋</span>
+            Crear sala
+          </button>
+          <button id="btn-unirse-sala" class="btn btn--secondary btn--xl" type="button">
+            <span class="btn__icon" aria-hidden="true">→</span>
+            Unirse a sala
+          </button>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           2. CREAR — Nueva sala
+      ────────────────────────────────────────── -->
+      <section id="screen-crear" class="screen screen--form" aria-label="Crear sala" hidden>
+        <header class="screen__header">
+          <button id="back-crear" class="btn btn--back" type="button" aria-label="Volver">←</button>
+          <h1 class="screen__title">Nueva sala</h1>
+        </header>
+
+        <form id="form-crear" class="form" novalidate>
+          <div class="form__group">
+            <label class="form__label" for="input-nombre-sala">Nombre de la sala</label>
+            <input
+              id="input-nombre-sala"
+              class="form__input"
+              type="text"
+              placeholder="Ej: Monopoly del sábado"
+              maxlength="30"
+              autocomplete="off"
+              required
+            />
+            <span class="form__hint" id="hint-nombre-sala"></span>
+          </div>
+
+          <div class="form__group">
+            <label class="form__label" for="input-saldo-inicial">Saldo inicial por jugador</label>
+            <div class="form__input-prefix-wrap">
+              <input
+                id="input-saldo-inicial"
+                class="form__input"
+                type="text"
+                placeholder="Ej: 15M"
+                autocomplete="off"
+                required
+            </div>
+            <span class="form__hint" id="hint-saldo-inicial"></span>
+          </div>
+
+          <div class="form__group">
+            <label class="form__label" for="input-nombre-host">Tu nombre (Host)</label>
+            <input
+              id="input-nombre-host"
+              class="form__input"
+              type="text"
+              placeholder="Ej: Martina"
+              maxlength="20"
+              autocomplete="nickname"
+              required
+            />
+            <span class="form__hint" id="hint-nombre-host"></span>
+          </div>
+
+          <div class="form__group">
+            <label class="form__label" for="input-color-host">Tu color</label>
+            <div class="color-picker" id="color-picker-host" role="group" aria-labelledby="label-color-host">
+              <span id="label-color-host" class="sr-only">Elegí tu color</span>
+            </div>
+            <input id="input-color-host" type="hidden" name="color-host" required />
+          </div>
+
+          <div class="form__group form__group--toggle">
+            <div class="toggle-wrap">
+              <label class="form__label" for="toggle-modo-estricto">Modo estricto</label>
+              <p class="form__description">Bloquea transacciones cuando no hay fondos suficientes.</p>
+            </div>
+            <label class="toggle" for="toggle-modo-estricto" aria-label="Activar modo estricto">
+              <input id="toggle-modo-estricto" class="toggle__input" type="checkbox" role="switch" />
+              <span class="toggle__track" aria-hidden="true">
+                <span class="toggle__thumb"></span>
+              </span>
+            </label>
+          </div>
+
+          <button id="btn-crear-confirmar" class="btn btn--primary btn--full" type="submit">
+            Crear sala
+          </button>
+        </form>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           3. UNIRSE — Código de sala
+      ────────────────────────────────────────── -->
+      <section id="screen-unirse" class="screen screen--form" aria-label="Unirse a sala" hidden>
+        <header class="screen__header">
+          <button id="back-unirse" class="btn btn--back" type="button" aria-label="Volver">←</button>
+          <h1 class="screen__title">Unirse a sala</h1>
+        </header>
+
+        <form id="form-unirse" class="form" novalidate>
+          <div class="form__group">
+            <label class="form__label" for="input-codigo-sala">Código de sala</label>
+            <input
+              id="input-codigo-sala"
+              class="form__input form__input--code"
+              type="text"
+              placeholder="ABC123"
+              maxlength="6"
+              minlength="6"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              required
+            />
+            <span class="form__hint" id="hint-codigo-sala">El host compartirá el código de 6 caracteres.</span>
+          </div>
+
+          <button id="btn-unirse-confirmar" class="btn btn--primary btn--full" type="submit">
+            Buscar sala
+          </button>
+        </form>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           4. PERFIL — Elegir nombre y color
+      ────────────────────────────────────────── -->
+      <section id="screen-perfil" class="screen screen--form" aria-label="Tu perfil" hidden>
+        <header class="screen__header">
+          <button id="back-perfil" class="btn btn--back" type="button" aria-label="Volver">←</button>
+          <h1 class="screen__title">Tu perfil</h1>
+        </header>
+
+        <div class="avatar-preview" id="avatar-preview" aria-hidden="true">
+          <span id="avatar-preview-inicial"></span>
+        </div>
+
+        <form id="form-perfil" class="form" novalidate>
+          <div class="form__group">
+            <label class="form__label" for="input-nombre-jugador">Tu nombre</label>
+            <input
+              id="input-nombre-jugador"
+              class="form__input"
+              type="text"
+              placeholder="Ej: Lucas"
+              maxlength="20"
+              autocomplete="nickname"
+              required
+            />
+            <span class="form__hint" id="hint-nombre-jugador"></span>
+          </div>
+
+          <div class="form__group">
+            <label class="form__label">Tu color</label>
+            <div class="color-picker" id="color-picker-jugador" role="group" aria-label="Elegí tu color"></div>
+            <input id="input-color-jugador" type="hidden" name="color-jugador" required />
+          </div>
+
+          <button id="btn-perfil-confirmar" class="btn btn--primary btn--full" type="submit">
+            Entrar a la sala
+          </button>
+        </form>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           5. LOBBY — Sala de espera
+      ────────────────────────────────────────── -->
+      <section id="screen-lobby" class="screen screen--lobby" aria-label="Sala de espera" hidden>
+        <header class="screen__header screen__header--lobby">
+          <div>
+            <h1 id="lobby-nombre-sala" class="screen__title">Sala</h1>
+            <p class="screen__subtitle">Sala de espera</p>
+          </div>
+          <div class="lobby-code-wrap">
+            <span class="lobby-code__label">Código</span>
+            <button id="btn-copiar-codigo" class="lobby-code__value" type="button" aria-label="Copiar código de sala">
+              <span id="lobby-codigo"></span>
+              <span class="lobby-code__copy-icon" aria-hidden="true">⎘</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="lobby__body">
+          <div class="lobby__section">
+            <h2 class="lobby__section-title">
+              Jugadores
+              <span id="lobby-count" class="lobby__count" aria-live="polite">0</span>
+            </h2>
+            <ul id="lobby-lista-jugadores" class="player-list" aria-label="Lista de jugadores" aria-live="polite">
+              <!-- Jugadores inyectados dinámicamente por app.js -->
+            </ul>
+          </div>
+        </div>
+
+        <footer class="lobby__footer">
+          <!-- Solo visible para el HOST -->
+          <button id="btn-iniciar-partida" class="btn btn--primary btn--full" type="button" hidden>
+            Iniciar partida
+          </button>
+          <!-- Siempre visible para el jugador -->
+          <p id="lobby-esperando" class="lobby__waiting-msg">
+            Esperando que el host inicie la partida…
+          </p>
+        </footer>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           6. BILLETERA — Vista del jugador
+      ────────────────────────────────────────── -->
+      <section id="screen-billetera" class="screen screen--billetera" aria-label="Mi billetera" hidden>
+        <header class="screen__header screen__header--billetera">
+          <h1 class="screen__title">Mi billetera</h1>
+          <!-- Botón para que el HOST cambie a modo cajero -->
+          <button id="btn-ir-cajero" class="btn btn--ghost btn--sm" type="button" hidden aria-label="Ir al cajero">
+            <span aria-hidden="true">⚙</span> Cajero
+          </button>
+        </header>
+
+        <!-- Tarjeta de jugador -->
+        <div class="wallet-card" id="wallet-card" role="region" aria-label="Tarjeta de jugador">
+          <div class="wallet-card__top">
+            <div class="wallet-card__avatar" id="wallet-avatar" aria-hidden="true">
+              <span id="wallet-avatar-inicial"></span>
+            </div>
+            <div class="wallet-card__info">
+              <p id="wallet-nombre" class="wallet-card__name">—</p>
+              <p id="wallet-sala" class="wallet-card__sala">—</p>
+            </div>
+            <div class="wallet-card__badge" id="wallet-badge-rol" aria-label="Rol">HOST</div>
+          </div>
+          <div class="wallet-card__balance-section">
+            <span class="wallet-card__balance-label">Saldo actual</span>
+            <p id="wallet-saldo" class="wallet-card__balance" aria-live="polite" aria-label="Saldo actual">$0</p>
+          </div>
+        </div>
+
+        <!-- Historial personal -->
+        <div class="history-section" aria-label="Historial de transacciones">
+          <h2 class="history__title">Mis movimientos</h2>
+          <ul id="billetera-historial" class="history-list" aria-live="polite" aria-label="Historial personal">
+            <!-- Inyectado por app.js -->
+          </ul>
+          <p id="billetera-historial-vacio" class="history__empty" hidden>Aún no hay movimientos.</p>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           7. CAJERO — Panel de administración (HOST)
+      ────────────────────────────────────────── -->
+      <section id="screen-cajero" class="screen screen--cajero" aria-label="Panel de cajero" hidden>
+  <header class="screen__header screen__header--cajero">
+    <h1 class="screen__title">Cajero Monopoly</h1>
+    <button id="btn-ir-billetera" class="btn btn--ghost btn--sm" type="button">
+      <span aria-hidden="true">💳</span> Billetera
+    </button>
+  </header>
+
+  <div class="dashboard-monopoly">
+    <div class="panel-cartas">
+      <div class="slots-area">
+        <div class="slot active-izq" id="slot-izq" onclick="cajeroSeleccionarRanura('izq')">
+          <span class="slot-label-izq">Recibe (+)</span>
+          <div id="ins-izq"></div>
+        </div>
+        <div class="slot" id="slot-der" onclick="cajeroSeleccionarRanura('der')">
+          <span class="slot-label-der">Paga (-)</span>
+          <div id="ins-der"></div>
+        </div>
+      </div>
+      <div class="tarjetas-scroll" id="lista-tarjetas-cajero">
+        </div>
+    </div>
+
+    <div class="panel-operaciones">
+      <div class="pantalla-container">
+        <div class="pantalla-estado" id="cajero-status">Monto a transferir:</div>
+        <div class="pantalla" id="cajero-display">0</div>
+      </div>
+
+      <div class="teclado">
+        <button onclick="cajeroInput('7')">7</button>
+        <button onclick="cajeroInput('8')">8</button>
+        <button onclick="cajeroInput('9')">9</button>
+        <button class="btn-accion" onclick="cajeroLimpiar()">C</button>
+
+        <button onclick="cajeroInput('4')">4</button>
+        <button onclick="cajeroInput('5')">5</button>
+        <button onclick="cajeroInput('6')">6</button>
+        <button class="btn-m" onclick="cajeroMultiplicador('M')">M</button>
+
+        <button onclick="cajeroInput('1')">1</button>
+        <button onclick="cajeroInput('2')">2</button>
+        <button onclick="cajeroInput('3')">3</button>
+        <button class="btn-k" onclick="cajeroMultiplicador('K')">K</button>
+
+        <button onclick="cajeroInput('0')">0</button>
+        <button onclick="cajeroInput('.')">.</button>
+        <button class="btn-go" onclick="cajeroPasoSalida()">🚀 +2M (GO)</button>
+        <button class="btn-confirm disabled" id="btn-confirmar-cajero" onclick="cajeroConfirmar()">CONFIRMAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cajero-extras cajero-extras--compact">
+          <details class="cajero-accordion" id="cajero-admin-wrap">
+            <summary class="accordion-header accordion-header--tiny">
+              <span>⚙️ Historial y Administración</span>
+              <span class="accordion-icon">▼</span>
+            </summary>
+            
+            <div class="accordion-content accordion-content--compact">
+              <div class="admin-compact-row">
+                <span class="cajero__section-title" style="margin:0;">Historial</span>
+                <button id="btn-limpiar-historial" class="btn btn--ghost btn--xs">Limpiar vista</button>
+              </div>
+              <ul id="cajero-historial" class="history-list history-list--master history-list--scroll" style="max-height: 120px; margin-top: 10px;"></ul>
+              <p id="cajero-historial-vacio" class="history__empty" hidden>Sin movimientos.</p>
+
+              <hr class="admin-divider">
+
+              <div class="admin-compact-row">
+                <span class="admin-action__name">Transferir Host</span>
+                <div class="admin-action__controls" style="display: flex; gap: 5px;">
+                  <select id="select-nuevo-host" class="form__select form__select--sm"></select>
+                  <button id="btn-transferir-host" class="btn btn--secondary btn--sm">Ir</button>
+                </div>
+              </div>
+
+              <hr class="admin-divider">
+
+              <div class="admin-compact-row">
+                <span class="admin-action__name" style="color: var(--danger);">Terminar Partida</span>
+                <button id="btn-terminar-partida" class="btn btn--danger btn--sm">Terminar</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+    </main><!-- /#app -->
+
+    <!-- ═══════════════════════════════════════════════
+         SCRIPTS
+    ════════════════════════════════════════════════ -->
+    <!-- <script src="config.js"></script> -->
+    <script type="module" src="app.js"></script>
+
+  </body>
+</html>
